@@ -40,34 +40,59 @@ class MainPage(QWidget):
     
     def inputs(self):
         
+        self.lengthInputLabel = QLabel("Length(mm) : ",self)
+        self.lengthInputLabel.setGeometry(QRect(50,50,150,30))
+        
+        self.widthInputLabel = QLabel("Width(mm) : ",self)
+        self.widthInputLabel.setGeometry(QRect(50,100,150,30))
+        
+        self.voltageInputLabel = QLabel("Voltage(V) : ",self)
+        self.voltageInputLabel.setGeometry(QRect(50,150,150,30))
+        
+        self.currentInputLabel = QLabel("Current(ohms) : ",self)
+        self.currentInputLabel.setGeometry(QRect(50,200,150,30))
+        
+        self.timeInputLabel = QLabel("Time(s) : ",self)
+        self.timeInputLabel.setGeometry(QRect(50,250,150,30))
+        
+        
         self.lengthInput = QLineEdit(self)
-        self.lengthInput.setGeometry(QRect(50,50,150,20))
+        self.lengthInput.setGeometry(QRect(150,50,150,30))
         self.lengthInput.setPlaceholderText("Length of bond line")
         
         self.widthInput = QLineEdit(self)
-        self.widthInput.setGeometry(QRect(50,100,150,20))
+        self.widthInput.setGeometry(QRect(150,100,150,30))
         self.widthInput.setPlaceholderText("Width of bond line")
         
         self.voltageInput = QLineEdit(self)
-        self.voltageInput.setGeometry(QRect(50,150,150,20))
+        self.voltageInput.setGeometry(QRect(150,150,150,30))
         self.voltageInput.setPlaceholderText("Voltage")
         
         self.curentInput = QLineEdit(self)
-        self.curentInput.setGeometry(QRect(50,200,150,20))
+        self.curentInput.setGeometry(QRect(150,200,150,30))
         self.curentInput.setPlaceholderText("Current")
         
         self.timeInput = QLineEdit(self)
-        self.timeInput.setGeometry(QRect(50,250,150,20))
+        self.timeInput.setGeometry(QRect(150,250,150,30))
         self.timeInput.setPlaceholderText("time")
+        
+        self.voltageLabel = QLabel("0 volts",self)
+        self.voltageLabel.setGeometry(QRect(50,400,150,20))
+        
+        self.currentLabel = QLabel("0 ohms",self)
+        self.currentLabel.setGeometry(QRect(50,450,150,20))
+        
+        self.timeLabel = QLabel("0 seconds",self)
+        self.timeLabel.setGeometry(QRect(50,500,150,20))
     
     def buttons(self):
 
         self.runButton = QPushButton("SET PARAMETERS",self)
-        self.runButton.setGeometry(QRect(50,300,150,20))
+        self.runButton.setGeometry(QRect(50,300,150,30))
         self.runButton.clicked.connect(self.set_parameters)
         
         self.runButton = QPushButton("RUN",self)
-        self.runButton.setGeometry(QRect(50,350,150,20))
+        self.runButton.setGeometry(QRect(50,350,150,30))
         
         self.runButton.clicked.connect(self.runCycle)
         
@@ -89,6 +114,11 @@ class MainPage(QWidget):
         self.voltage = int(self.voltageInput.text())
         self.current = int(self.curentInput.text())
         self.cycleTime = int(self.timeInput.text())
+        
+        self.voltageLabel.setText(f"{self.voltage} volts")
+        self.currentLabel.setText(f"{self.current} ohms")
+        self.timeLabel.setText(f"{self.cycleTime} seconds")
+        
         
         print(self.voltage)
         print(self.current)
