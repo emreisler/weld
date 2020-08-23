@@ -1,5 +1,5 @@
 import sys
-from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QPushButton, QFrame, QLineEdit,QMainWindow,QSpinBox
+from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QPushButton, QFrame, QLineEdit,QMainWindow,QSpinBox,QMessageBox
 from PyQt5.QtCore import Qt
 from PyQt5.QtCore import pyqtSlot, QRect, QCoreApplication,QLine
 from PyQt5.QtGui import QPixmap,QIcon,QFont
@@ -10,13 +10,10 @@ import pyqtgraph as pg
 from collections import deque
 from pyqtgraph.Qt import QtGui, QtCore
 import random
-#import os 
-#from multiprocessing import Pool
 import threading
 import math
-#192.168.1.30 plc IP 
-#255.255.255.0 SUBNET MASK
-from pymodbus.client.sync import ModbusTcpClient 
+from pymodbus.client.sync import ModbusTcpClient
+import csv
 
 """
 Notes:
@@ -49,6 +46,8 @@ class MainPage(QWidget):
         self.setCurrent1 = deque()
         self.setVoltage2 = deque()
         self.setCurrent2 = deque()
+        self.setVoltage3 = deque()
+        self.setCurrent3 = deque()
         self.resistanceMeasurements = deque()
         self.graphTime = deque()
         self.tc1Values = deque()
@@ -64,6 +63,7 @@ class MainPage(QWidget):
         self.labelHeight = 30
         self.host = '192.168.1.30' # PLC IP
         self.port = 502 # PLC PORT
+        
 
         self.graph()
         self.widget()
@@ -71,62 +71,66 @@ class MainPage(QWidget):
     def widget(self):
         self.setWindowTitle(self.title)
         self.setGeometry(self.left,self.top,self.width,self.height)
-        
+        self.file = open("Combinear.qss","r")
+        with self.file:
+            self.qss  = self.file.read()
+            self.setStyleSheet(self.qss)
         self.inputs()
         
         self.show()
+        
     
     def inputs(self):
         
        
-        self.label = QLabel(self) 
-          
-        
-        
-        self.frameAreaInputs = QFrame(self)
-        self.frameAreaInputs.setGeometry(QRect(50,20,675,250))
-        self.frameAreaInputs.setStyleSheet("border-width: 1;border-radius: 3;border-style: solid;border-color: rgb(100,100,100)")
-        
+        self.logoLabel = QLabel(self) 
+         
         # loading image 
         self.pixmap = QPixmap('images/logo.svg') 
   
         # adding image to label 
-        self.label.setPixmap(self.pixmap) 
+        self.logoLabel.setPixmap(self.pixmap) 
   
         # Optional, resize label to image size 
-        self.label.move(self.width-350,20)
+        self.logoLabel.move(self.size().width()-350,20)
     
+        self.frameAreaInputs = QFrame(self)
+        self.frameAreaInputs.setGeometry(QRect(50,20,675,250))
+        self.frameAreaInputs.setStyleSheet("border-width: 1; font-size : 15px;border-radius: 3;border-style: solid;border-color: rgb(100,100,100)")
         
-    
+        self.areaInputsLabel = QLabel("MESH PARAMETERS",self.frameAreaInputs)
+        self.areaInputsLabel.setGeometry(QRect(250,10,200,30))
+        self.areaInputsLabel.setStyleSheet("border-style: none;color : rgb(30, 146, 202); font-size : 20px")
+        
         self.resistanceInputLabel = QLabel("Resistance(ohm) : ",self.frameAreaInputs)
-        self.resistanceInputLabel.setGeometry(QRect(50,50,150,30))
+        self.resistanceInputLabel.setGeometry(QRect(50,50,150,50))
         
         self.lengthInputLabel = QLabel("Length(mm) : ",self.frameAreaInputs)
-        self.lengthInputLabel.setGeometry(QRect(50,100,150,30))
+        self.lengthInputLabel.setGeometry(QRect(50,100,150,50))
         
         self.widthInputLabel = QLabel("Width(mm) : ",self.frameAreaInputs)
-        self.widthInputLabel.setGeometry(QRect(50,150,150,30))
+        self.widthInputLabel.setGeometry(QRect(50,150,150,50))
         
         self.resistanceInput = QLineEdit(self.frameAreaInputs)
-        self.resistanceInput.setGeometry(QRect(150,50,150,30))
+        self.resistanceInput.setGeometry(QRect(200,50,150,50))
         self.resistanceInput.setPlaceholderText("Resistance(ohm)")
         
         self.lengthInput = QLineEdit(self.frameAreaInputs)
-        self.lengthInput.setGeometry(QRect(150,100,150,30))
+        self.lengthInput.setGeometry(QRect(200,100,150,50))
         self.lengthInput.setPlaceholderText("Length of bond line")
         
         self.widthInput = QLineEdit(self.frameAreaInputs)
-        self.widthInput.setGeometry(QRect(150,150,150,30))
+        self.widthInput.setGeometry(QRect(200,150,150,50))
         self.widthInput.setPlaceholderText("Width of bond line")
         
         
         
         self.calculateResistanceButton = QPushButton("CALCULATE RESISTANCE",self.frameAreaInputs)
-        self.calculateResistanceButton.setGeometry(QRect(350,50, self.buttonWidth, self.buttonHeight))
+        self.calculateResistanceButton.setGeometry(QRect(450,50, self.buttonWidth+50, self.buttonHeight))
         self.calculateResistanceButton.clicked.connect(self.calculate_resistance)
         
         self.calculateParameterseButton = QPushButton("CALCULATE PARAMETERS",self.frameAreaInputs)
-        self.calculateParameterseButton.setGeometry(QRect(350,100, self.buttonWidth,self.buttonHeight))
+        self.calculateParameterseButton.setGeometry(QRect(450,100, self.buttonWidth+50,self.buttonHeight))
         self.calculateParameterseButton.clicked.connect(self.calculate_parameters)
         
         self.missingDimension = QLabel("",self.frameAreaInputs)
@@ -137,77 +141,77 @@ class MainPage(QWidget):
         #CYCLE PARAMETER INPUTS
         self.frameCycleInputs = QFrame(self)
         self.frameCycleInputs.setGeometry(QRect(50,300,675,300))
-        self.frameCycleInputs.setStyleSheet("border-width: 1;border-radius: 3;border-style: solid;border-color: rgb(100,100,100)")
+        self.frameCycleInputs.setStyleSheet("border-width: 1;border-radius: 3;font-size : 15px; border-style: solid;border-color: rgb(100,100,100)")
         
         self.cyleInputLabel = QLabel("CYCLE PARAMETERS ",self.frameCycleInputs)
         self.cyleInputLabel.setGeometry(QRect(250,10,200,30))
         self.cyleInputLabel.setStyleSheet("border-style: none;color : rgb(30, 146, 202); font-size : 20px")
         
         self.voltageInputLabel = QLabel("Voltage(V) raise : ",self.frameCycleInputs)
-        self.voltageInputLabel.setGeometry(QRect(50,50,150,30))
+        self.voltageInputLabel.setGeometry(QRect(50,50,150,50))
         
         self.currentInputLabel = QLabel("Current(A) raise : ",self.frameCycleInputs)
-        self.currentInputLabel.setGeometry(QRect(50,100,150,30))
+        self.currentInputLabel.setGeometry(QRect(50,100,150,50))
         
         self.timeInputLabel = QLabel("Time(s) raise : ",self.frameCycleInputs)
-        self.timeInputLabel.setGeometry(QRect(50,150,150,30)) 
+        self.timeInputLabel.setGeometry(QRect(50,150,150,50)) 
         
         self.voltageInput = QLineEdit(self.frameCycleInputs)
-        self.voltageInput.setGeometry(QRect(175,50,50,30))
-        self.voltageInput.setPlaceholderText("0")
+        self.voltageInput.setGeometry(QRect(200,50,50,50))
+        self.voltageInput.setText("50")
         
         self.curentInput = QLineEdit(self.frameCycleInputs)
-        self.curentInput.setGeometry(QRect(175,100,50,30))
+        self.curentInput.setGeometry(QRect(200,100,50,50))
         self.curentInput.setPlaceholderText("0")
         
         self.timeInput = QLineEdit(self.frameCycleInputs)
-        self.timeInput.setGeometry(QRect(175,150,50,30))
+        self.timeInput.setGeometry(QRect(200,150,50,50))
         self.timeInput.setPlaceholderText("0")
         
         self.voltageInputLabel2 = QLabel("Voltage(V) 1st dwell : ",self.frameCycleInputs)
-        self.voltageInputLabel2.setGeometry(QRect(250,50,150,30))
+        self.voltageInputLabel2.setGeometry(QRect(250,50,150,50))
         
         self.currentInputLabel2 = QLabel("Current(A) 1st dwell : ",self.frameCycleInputs)
-        self.currentInputLabel2.setGeometry(QRect(250,100,150,30))
+        self.currentInputLabel2.setGeometry(QRect(250,100,150,50))
         
         self.timeInputLabel2 = QLabel("Time(s) 1st dwell : ",self.frameCycleInputs)
-        self.timeInputLabel2.setGeometry(QRect(250,150,150,30)) 
+        self.timeInputLabel2.setGeometry(QRect(250,150,150,50)) 
         
         self.voltageInput2 = QLineEdit(self.frameCycleInputs)
-        self.voltageInput2.setGeometry(QRect(375,50,50,30))
-        self.voltageInput2.setPlaceholderText("0")
+        self.voltageInput2.setGeometry(QRect(400,50,50,50))
+        self.voltageInput2.setText("50")
         
         self.curentInput2 = QLineEdit(self.frameCycleInputs)
-        self.curentInput2.setGeometry(QRect(375,100,50,30))
+        self.curentInput2.setGeometry(QRect(400,100,50,50))
         self.curentInput2.setPlaceholderText("0")
         
         self.timeInput2 = QLineEdit(self.frameCycleInputs)
-        self.timeInput2.setGeometry(QRect(375,150,50,30))
+        self.timeInput2.setGeometry(QRect(400,150,50,50))
         self.timeInput2.setPlaceholderText("0")
         
         self.voltageInputLabel3 = QLabel("Voltage(V) 2nd dwell : ",self.frameCycleInputs)
-        self.voltageInputLabel3.setGeometry(QRect(450,50,150,30))
+        self.voltageInputLabel3.setGeometry(QRect(450,50,150,50))
         
         self.currentInputLabel3 = QLabel("Current(A) 2nd dwell : ",self.frameCycleInputs)
-        self.currentInputLabel3.setGeometry(QRect(450,100,150,30))
+        self.currentInputLabel3.setGeometry(QRect(450,100,150,50))
         
         self.timeInputLabel3 = QLabel("Time(s) 2nd dwell : ",self.frameCycleInputs)
-        self.timeInputLabel3.setGeometry(QRect(450,150,150,30)) 
+        self.timeInputLabel3.setGeometry(QRect(450,150,150,50)) 
         
         self.voltageInput3 = QLineEdit(self.frameCycleInputs)
-        self.voltageInput3.setGeometry(QRect(575,50,50,30))
-        self.voltageInput3.setPlaceholderText("0")
+        self.voltageInput3.setGeometry(QRect(600,50,50,50))
+        self.voltageInput3.setText("50")
         
         self.curentInput3 = QLineEdit(self.frameCycleInputs)
-        self.curentInput3.setGeometry(QRect(575,100,50,30))
+        self.curentInput3.setGeometry(QRect(600,100,50,50))
         self.curentInput3.setPlaceholderText("0")
         
         self.timeInput3 = QLineEdit(self.frameCycleInputs)
-        self.timeInput3.setGeometry(QRect(575,150,50,30))
+        self.timeInput3.setGeometry(QRect(600,150,50,50))
         self.timeInput3.setPlaceholderText("0")
         
         self.set_paramsButton = QPushButton("SET PARAMETERS",self.frameCycleInputs)
-        self.set_paramsButton.setGeometry(QRect(500,200, self.buttonWidth,self.buttonHeight))
+        self.set_paramsButton.setGeometry(QRect(500,250, self.buttonWidth,self.buttonHeight))
         self.set_paramsButton.clicked.connect(self.set_parameters)
         
         #PARAMETERS SHOWN
@@ -215,39 +219,51 @@ class MainPage(QWidget):
         self.frameCycleLabels.setGeometry(QRect(50,650,675,250))
         self.frameCycleLabels.setStyleSheet("border-width: 1;border-radius: 3;border-style: solid;border-color: rgb(100,100,100)")
         
-        self.voltageLabel = QLabel("0 volts (raise)",self.frameCycleLabels)
+        self.step1Label = QLabel("STEP-1",self.frameCycleLabels)
+        self.step1Label.setGeometry(QRect(50,10,200,30))
+        self.step1Label.setStyleSheet("border-style: none;color : rgb(30, 146, 202); font-size : 20px")
+        
+        self.step2Label = QLabel("STEP-2",self.frameCycleLabels)
+        self.step2Label.setGeometry(QRect(200,10,200,30))
+        self.step2Label.setStyleSheet("border-style: none;color : rgb(30, 146, 202); font-size : 20px")
+        
+        self.step3Label = QLabel("STEP-3",self.frameCycleLabels)
+        self.step3Label.setGeometry(QRect(350,10,200,30))
+        self.step3Label.setStyleSheet("border-style: none;color : rgb(30, 146, 202); font-size : 20px")
+        
+        self.voltageLabel = QLabel("0 V (raise)",self.frameCycleLabels)
         self.voltageLabel.setGeometry(QRect(50,50,150,20))
         self.voltageLabel.setStyleSheet("border-style: none;font-size:15px")
         
-        self.currentLabel = QLabel("0 ampers (raise)",self.frameCycleLabels)
+        self.currentLabel = QLabel("0 A (raise)",self.frameCycleLabels)
         self.currentLabel.setGeometry(QRect(50,100,150,20))
         self.currentLabel.setStyleSheet("border-style: none;font-size:15px")
         
-        self.timeLabel = QLabel("0 seconds (raise)",self.frameCycleLabels)
+        self.timeLabel = QLabel("0 s (raise)",self.frameCycleLabels)
         self.timeLabel.setGeometry(QRect(50,150,150,20))
         self.timeLabel.setStyleSheet("border-style: none;font-size:15px")
         
-        self.voltageLabel2 = QLabel("0 volts (1st dwell)",self.frameCycleLabels)
+        self.voltageLabel2 = QLabel("0 V (1st dwell)",self.frameCycleLabels)
         self.voltageLabel2.setGeometry(QRect(200,50,150,20))
         self.voltageLabel2.setStyleSheet("border-style: none;font-size:15px")
         
-        self.currentLabel2 = QLabel("0 ampers (1st dwell)",self.frameCycleLabels)
+        self.currentLabel2 = QLabel("0 A (1st dwell)",self.frameCycleLabels)
         self.currentLabel2.setGeometry(QRect(200,100,150,20))
         self.currentLabel2.setStyleSheet("border-style: none;font-size:15px")
         
-        self.timeLabel2 = QLabel("0 seconds (1st dwell)",self.frameCycleLabels)
+        self.timeLabel2 = QLabel("0 s (1st dwell)",self.frameCycleLabels)
         self.timeLabel2.setGeometry(QRect(200,150,150,20))
         self.timeLabel2.setStyleSheet("border-style: none;font-size:15px")
         
-        self.voltageLabel3 = QLabel("0 volts (2nd dwell)",self.frameCycleLabels)
+        self.voltageLabel3 = QLabel("0 V (2nd dwell)",self.frameCycleLabels)
         self.voltageLabel3.setGeometry(QRect(350,50,150,20))
         self.voltageLabel3.setStyleSheet("border-style: none;font-size:15px")
         
-        self.currentLabel3 = QLabel("0 ampers 2nd dwell)",self.frameCycleLabels)
+        self.currentLabel3 = QLabel("0 A 2nd dwell)",self.frameCycleLabels)
         self.currentLabel3.setGeometry(QRect(350,100,150,20))
         self.currentLabel3.setStyleSheet("border-style: none;font-size:15px")
         
-        self.timeLabel3 = QLabel("0 seconds (2nd dwell)",self.frameCycleLabels)
+        self.timeLabel3 = QLabel("0 s (2nd dwell)",self.frameCycleLabels)
         self.timeLabel3.setGeometry(QRect(350,150,150,20))
         self.timeLabel3.setStyleSheet("border-style: none;font-size:15px")
         
@@ -322,6 +338,7 @@ class MainPage(QWidget):
         
         self.voltageSpinBox = QSpinBox(self.manualSectionFrame)
         self.voltageSpinBox.setGeometry(QRect(150,75, 75,50))
+        self.voltageSpinBox.valueChanged.connect(self.manual_voltage_thread)
         
         self.currentSetLabel = QLabel("Current",self.manualSectionFrame)
         self.currentSetLabel.setGeometry(QRect(20,150,100,50))
@@ -329,11 +346,12 @@ class MainPage(QWidget):
         
         self.currentSpinBox = QSpinBox(self.manualSectionFrame)
         self.currentSpinBox.setGeometry(QRect(150,150, 75,50))
+        self.currentSpinBox.valueChanged.connect(self.manual_current_thread)
         
         #TC VALUES
         self.tcMeasurementsFrame = QFrame(self)
         self.tcMeasurementsFrame.setGeometry(QRect(self.width-650,650, 300,250))
-        self.tcMeasurementsFrame.setStyleSheet("font-size:15px; color :rgb(214, 214, 10);border-width: 1;border-radius: 3;border-style: solid;border-color: rgb(100,100,100)")
+        self.tcMeasurementsFrame.setStyleSheet("font-size:15px; color : #c2c2c2;border-width: 1;border-radius: 3;border-style: solid;border-color: rgb(100,100,100)")
         
         self.tc1Label = QLabel("TC1 ",self.tcMeasurementsFrame)
         self.tc1Label.setGeometry(QRect(20,0,200,30))
@@ -361,7 +379,7 @@ class MainPage(QWidget):
         self.tcInfoButton.clicked.connect(self.get_temperatures_thread)
         
         self.stopTcMeasurement = QPushButton("STOP",self.tcMeasurementsFrame)
-        self.stopTcMeasurement.setGeometry(QRect(150 ,200, self.buttonWidth,self.buttonHeight))
+        self.stopTcMeasurement.setGeometry(QRect(200 ,200, self.buttonWidth-100,self.buttonHeight))
         self.stopTcMeasurement.setStyleSheet("font-size:15px; color :white")
         self.stopTcMeasurement.clicked.connect(self.stop_tc_measurement)
         
@@ -373,7 +391,7 @@ class MainPage(QWidget):
         
         #CONNECTION CHECK BUTTON
         self.check_connectionButton = QPushButton("CHECK CONNECTION",self)
-        self.check_connectionButton.setGeometry(QRect(self.width-200 ,self.height-700, self.buttonWidth,self.buttonHeight))
+        self.check_connectionButton.setGeometry(QRect(self.width-200 ,self.height-750, self.buttonWidth,self.buttonHeight))
         self.check_connectionButton.clicked.connect(self.check_connection)
         
         self.check_connectionLabel = QLabel("",self)
@@ -381,7 +399,7 @@ class MainPage(QWidget):
         
         #MEASUREMENTS PANEL
         self.measurementFrame = QFrame(self)
-        self.measurementFrame.setGeometry(QRect(self.width-300,300,350,200))
+        self.measurementFrame.setGeometry(QRect(self.width-250,300,350,200))
         self.measurementFrame.setStyleSheet("border-style: none;font-size:30px")
         
         self.measuredLabel = QLabel("MEASUREMENTS",self.measurementFrame)
@@ -415,34 +433,45 @@ class MainPage(QWidget):
         
     def get_temperatures(self):
         self.measureTemperature = True
+        """
+        self.client = ModbusTcpClient(self.host, self.port)
+        self.client.connect()
+        """
         while self.measureTemperature:
             try:
-                self.client = ModbusTcpClient(self.host, self.port)
-                self.client.connect()
+                
                 self.tcValues = self.client.read_holding_registers(40,5,unit=0)
                 assert(self.tcValues.function_code < 0x80)     # test that we are not an error
-                self.tc1Label.setText(f"TC-1 {self.tcValues.registers[0]/10} C°")
-                self.tc2Label.setText(f"TC-2 {self.tcValues.registers[1]/10} C°")
-                self.tc3Label.setText(f"TC-3 {self.tcValues.registers[2]/10} C°")
-                self.tc4Label.setText(f"TC-4 {self.tcValues.registers[3]/10} C°")
-                self.tc5Label.setText(f"TC-5 {self.tcValues.registers[4]/10} C°")
+                
+                self.tc1Label.setText(f"TC1 {self.tcValues.registers[0]/10} C°")
+                self.tc2Label.setText(f"TC2 {self.tcValues.registers[1]/10} C°")
+                self.tc3Label.setText(f"TC3 {self.tcValues.registers[2]/10} C°")
+                self.tc4Label.setText(f"TC4 {self.tcValues.registers[3]/10} C°")
+                self.tc5Label.setText(f"TC5 {self.tcValues.registers[4]/10} C°")
                 time.sleep(0.5)
                 print("Connected to DataLogger and temperatures are written on mainwindow")
             except:
                 print("DataLogger connection error")
                 return "Couldn't get temperatures from data logger"
+        print("Thermocouple measurements has stopped")
+        return "Thermocouple measurements has stopped"
             
     def stop_tc_measurement(self):
         self.measureTemperature = False
         return "Temperature reading is stopped"
         
     def stop_cycle(self):
-        
+    
         self.voltage1 = 0
         self.current1 = 0
         self.voltage2 = 0
         self.current2 = 0
+        self.voltage3 = 0
+        self.current3 = 0
+        
+    
         try:
+            
             rm = visa.ResourceManager()
             SGX50X200D = rm.open_resource('TCPIP0::169.254.237.223::inst0::INSTR')
             SGX50X200D.write(':SOURce:VOLTage:LEVel:IMMediate:AMPLitude %G' % (0))
@@ -450,9 +479,25 @@ class MainPage(QWidget):
             SGX50X200D.write('*RST')     
             SGX50X200D.close()
             rm.close()
+            
             self.cycleContinue = False
+            self.voltageLabel.setText("0 V (raise)")
+            self.currentLabel.setText("0 A (raise)")
+            self.timeLabel.setText("0 s (raise)")
+            
+            self.voltageLabel2.setText("0 V (1st dwell)")
+            self.currentLabel2.setText("0 A (1st dwell)")
+            self.timeLabel2.setText("0 s (1st dwell)")
+            
+            self.voltageLabel3.setText("0 V (2nd dwell)")
+            self.currentLabel3.setText("0 A (2nd dwell)")
+            self.timeLabel3.setText("0 s (2nd dwell)")
+            print("Cycle stopped im emergency")
+            return "Cycle stopped im emergency"
         except:
             print("Cycle couldn't stop in emergency")
+            return "Cycle couldn't stop in emergency"
+            
        
         
     def check_connection(self):
@@ -460,30 +505,24 @@ class MainPage(QWidget):
         try: 
             rm = visa.ResourceManager()
             SGX50X200D = rm.open_resource('TCPIP0::169.254.237.223::inst0::INSTR')
-            time.sleep(1)
-            
+            time.sleep(0.5)
             SGX50X200D.close()
             rm.close()
+            
             self.check_connectionButton.setStyleSheet("background-color: green")
-            self.check_connectionLabel.setText("<h2>CONNECTED</h2>")
-            self.check_connectionLabel.setStyleSheet("color: green")
+            self.check_connectionButton.setText("CONNECTED")
             
         except:
             self.check_connectionButton.setStyleSheet("background-color: red")
-            self.check_connectionLabel.setText("<h2>NOT CONNECTED</h2>")
-            self.check_connectionLabel.setStyleSheet("color: red")
+            self.check_connectionButton.setText("NOT CONNECTED")
         
     def graph(self):
         
-        self.graphUpdateSpeed = 1000
         self.appGraph = QtGui.QApplication([])
         self.win = pg.GraphicsWindow(title="Cycle Graph")
-        self.win.setGeometry(QRect(self.width-450,50, 750,750))
-        
+        self.win.setGeometry(QRect(50,50, 750,750))
+        self.win.showMaximized()
         self.p1 = self.win.addPlot(colspan=2,title = "V,I,R-t")
-        
-        #self.p1.setTitle("Voltage", color="r", size="10pt")
-        
         
         self.p1.setLabel('left', 'Voltage,Current,Resistance', units='V,A,ohm')
         self.p1.setLabel('bottom', 'Time', units='s')
@@ -498,8 +537,10 @@ class MainPage(QWidget):
         self.curve2 = self.p1.plot(self.currentMeasurements,self.graphTime,name= "Current",pen=pg.mkPen('g',width=2))
         self.curve3 = self.p1.plot(self.setVoltage1,name = "Voltage raise Set", pen=pg.mkPen('r',style=QtCore.Qt.DashLine,width = 0.5))
         self.curve4 = self.p1.plot(self.setCurrent1,name = "Current raise Set",pen=pg.mkPen('g',style=QtCore.Qt.DashLine,width = 0.5))
-        self.curve5 = self.p1.plot(self.setVoltage2,name = "Voltage dwell Set",pen=pg.mkPen('r',style=QtCore.Qt.DotLine,width = 0.5))
-        self.curve6 = self.p1.plot(self.setCurrent2,name = "Current dwell Set",pen=pg.mkPen('g',style=QtCore.Qt.DotLine,width = 0.5))
+        self.curve5 = self.p1.plot(self.setVoltage2,name = "Voltage 1st dwell Set",pen=pg.mkPen('r',style=QtCore.Qt.DotLine,width = 0.5))
+        self.curve6 = self.p1.plot(self.setCurrent2,name = "Current 1st dwell Set",pen=pg.mkPen('g',style=QtCore.Qt.DotLine,width = 0.5))
+        self.curve13 = self.p1.plot(self.setVoltage3,name = "Voltage 2nd dwell Set",pen=pg.mkPen('r',style=QtCore.Qt.DotLine,width = 1))
+        self.curve14 = self.p1.plot(self.setCurrent3,name = "Current 2nd dwell Set",pen=pg.mkPen('g',style=QtCore.Qt.DotLine,width = 1))
         self.curve7 = self.p1.plot(self.resistanceMeasurements,self.graphTime,name = "Resistance",pen=pg.mkPen('b',width=2))
         
         #DataLogger
@@ -509,7 +550,8 @@ class MainPage(QWidget):
         self.curve11 = self.p1.plot(self.tc4Values,self.graphTime,name = "TC4",pen=pg.mkPen('r',width=2))
         self.curve12 = self.p1.plot(self.tc5Values,self.graphTime,name = "TC5",pen=pg.mkPen('w',width=2))
         
-        self.legend = self.p1.addLegend(offset=(self.graphWidth-250, self.graphHeight-(self.graphHeight-20)))
+        #AddLegend
+        self.legend = self.p1.addLegend(offset=(1600, 20))
         
         self.legend.addItem(self.curve1, name=self.curve1.opts['name'])
         self.legend.addItem(self.curve2, name=self.curve2.opts['name'])
@@ -523,16 +565,19 @@ class MainPage(QWidget):
         self.legend.addItem(self.curve10, name=self.curve10.opts['name'])
         self.legend.addItem(self.curve11, name=self.curve11.opts['name'])
         self.legend.addItem(self.curve12, name=self.curve12.opts['name'])
+        self.legend.addItem(self.curve13, name=self.curve13.opts['name'])
+        self.legend.addItem(self.curve14, name=self.curve14.opts['name'])
     
     def reset_graph(self):
         try:
-            
             self.voltageMeasurements.clear()
             self.currentMeasurements.clear()
             self.setVoltage1.clear()
             self.setCurrent1.clear()
             self.setVoltage2.clear()
             self.setCurrent2.clear()
+            self.setVoltage3.clear()
+            self.setCurrent3.clear()
             self.resistanceMeasurements.clear()
             self.graphTime.clear()
             self.tc1Values.clear()
@@ -540,7 +585,6 @@ class MainPage(QWidget):
             self.tc3Values.clear()
             self.tc4Values.clear()
             self.tc5Values.clear()
-            
             self.curve1.clear()
             self.curve2.clear()
             self.curve3.clear()
@@ -553,14 +597,27 @@ class MainPage(QWidget):
             self.curve10.clear()
             self.curve11.clear()
             self.curve12.clear()
+            self.curve13.clear()
+            self.curve14.clear()
+            self.voltageLabel.setText("0 V (raise)")
+            self.currentLabel.setText("0 A (raise)")
+            self.timeLabel.setText("0 s (raise)")
             
-        
+            self.voltageLabel2.setText("0 V (1st dwell)")
+            self.currentLabel2.setText("0 A (1st dwell)")
+            self.timeLabel2.setText("0 s (1st dwell)")
+            
+            self.voltageLabel3.setText("0 V (2nd dwell)")
+            self.currentLabel3.setText("0 A (2nd dwell)")
+            self.timeLabel3.setText("0 s (2nd dwell)")
+            print("Graph is reset")
+            return "Graph is reset"
         except:
             print("Reset Graph Error")
+            return "Reset Graph Error"
         
     def calculate_resistance(self):
         try: 
-            
             rm = visa.ResourceManager()
             SGX50X200D = rm.open_resource('TCPIP0::169.254.237.223::inst0::INSTR')
             time.sleep(1)
@@ -670,6 +727,55 @@ class MainPage(QWidget):
             self.missingDimension.setText("Missing Input !")
             print("Missing input in coupon properties")
             return "Missing input"
+    def manual_voltage_thread(self):
+        try:
+            self.manualVoltageThread = threading.Thread(target=self.manual_voltage)
+            self.manualVoltageThread.start()
+            print("Thread Completed")
+            return "Thread Completed"
+        except:
+            print("Thread Couldn' t Completed")
+            return "Thread Couldn' t Completed"
+        
+        
+    def manual_voltage(self):
+        try:
+           self.manualVoltage = int(self.voltageSpinBox.text()) 
+           
+           rm = visa.ResourceManager()
+           SGX50X200D = rm.open_resource('TCPIP0::169.254.237.223::inst0::INSTR')
+           SGX50X200D.write(':SOURce:VOLTage:LEVel:IMMediate:AMPLitude %G' % (self.manualVoltage))
+           
+           print("Manual Voltage set")
+           return "Manual Voltage set"
+        except:
+            print("Manual Voltage Couldn' t be set")
+            return "Manual Voltage Couldn' t be set"
+        
+    def manual_current_thread(self):
+        try:
+            self.manualCurrentThread = threading.Thread(target=self.manual_current)
+            self.manualCurrentThread.start()
+            print("Thread Completed")
+            return "Thread Completed"
+        except:
+            print("Thread Couldn' t Completed")
+            return "Thread Couldn' t Completed"
+        
+        
+    def manual_current(self):
+        try:
+           self.manualVoltage = int(self.voltageSpinBox.text()) 
+           
+           rm = visa.ResourceManager()
+           SGX50X200D = rm.open_resource('TCPIP0::169.254.237.223::inst0::INSTR')
+           SGX50X200D.write(':SOURce:CURRent:LEVel:IMMediate:AMPLitude %G' % (self.manualVoltage))
+           
+           print("Manual Current set")
+           return "Manual Current set"
+        except:
+            print("Manual Current Couldn' t be set")
+            return "Manual Current Couldn' t be set"
         
     def set_parameters(self):
         try:
@@ -702,20 +808,15 @@ class MainPage(QWidget):
                 self.setCurrent1.append(self.current1)
                 self.setVoltage2.append(self.voltage2)
                 self.setCurrent2.append(self.current2)
+                self.setVoltage3.append(self.voltage3)
+                self.setCurrent3.append(self.current3)
                 
             self.curve3.setData(self.setVoltage1)
             self.curve4.setData(self.setCurrent1)
             self.curve5.setData(self.setVoltage2)
             self.curve6.setData(self.setCurrent2)
-            print(self.voltage1)
-            print(self.current1)
-            print(self.cycleTime1)
-            print(self.voltage2)
-            print(self.current2)
-            print(self.cycleTime2)
-            print(self.voltage3)
-            print(self.current3)
-            print(self.cycleTime3)
+            self.curve13.setData(self.setVoltage1)
+            self.curve14.setData(self.setCurrent1)
             
             print("Parameters are set")
             return "Parameters are set"
@@ -735,6 +836,7 @@ class MainPage(QWidget):
         
     def runCycle(self):
         try:
+            
             try:
                 
                 self.client = ModbusTcpClient(self.host, self.port)
@@ -749,10 +851,12 @@ class MainPage(QWidget):
             except:
                 print("Power Supply connection error")
                 pass
+            
             time.sleep(0.3)
             self.runButton.setStyleSheet("background-color: green; color:white")
             self.runButton.setText(f"CYCLE\nRUNNING")
             self.runButton.setEnabled(False)
+            
             SGX50X200D.write(':SOURce:CURRent:LEVel:IMMediate:AMPLitude %G' % (self.current1))
             
             SGX50X200D.write(':SOURce:VOLTage:LEVel:IMMediate:AMPLitude %G' % (self.voltage1))
@@ -760,9 +864,11 @@ class MainPage(QWidget):
             
             
             self.cycleContinue = True
-            while self.cycleContinue: 
-                for i in range((2 * self.cycleTime1) + (2 * self.cycleTime2) + (2*self.cycleTime3) + 30) :
-                    
+            
+            for i in range((2 * self.cycleTime1) + (2 * self.cycleTime2) + (2*self.cycleTime3) + 30):
+                if self.cycleContinue == True:
+                    print(self.cycleContinue)
+                    print(i)
                     if i < 2 * self.cycleTime1:
                         self.stepName = "1st Step (raise)"
                     elif 2 * self.cycleTime1 < i < 2 * self.cycleTime2:
@@ -800,16 +906,18 @@ class MainPage(QWidget):
                         
                         temp_values = SGX50X200D.query_ascii_values(':MEASure:VOLTage?')
                         self.measured_voltage = temp_values[0]
+                        
                         self.voltageMeasurements.append(self.measured_voltage)
                         self.measuredVoltageLabel.setText(f"Voltage {round(self.measured_voltage,2)} V")
                     except:
                         print("Voltage couldn' t measured")
-                        pass
+                        
                     time.sleep(0.25)
                     try:
                         
                         temp_values = SGX50X200D.query_ascii_values(':MEASure:CURRent?')
                         self.measured_current = temp_values[0]
+                        
                         self.currentMeasurements.append(self.measured_current)
                         self.measuredCurrentLabel.setText(f"Current {round(self.measured_current,2)} A")
                     except:
@@ -826,6 +934,7 @@ class MainPage(QWidget):
                         print("Resistance couldn't calculated")
                     
                     try:
+                    
                         self.tcValues = self.client.read_holding_registers(40,5,unit=0)
                         assert(self.tcValues.function_code < 0x80)     # test that we are not an error
                         
@@ -840,7 +949,7 @@ class MainPage(QWidget):
                         self.curve10.setData(self.graphTime,self.tc3Values)
                         self.curve11.setData(self.graphTime,self.tc4Values)
                         self.curve12.setData(self.graphTime,self.tc5Values)
-                        print(self.tc1Values)
+                        
                     except:
                         print("Datalogger data reading error")
                     self.curve1.setData(self.graphTime,self.voltageMeasurements)
@@ -848,29 +957,33 @@ class MainPage(QWidget):
                     
                     
                     self.appGraph.processEvents()
-                SGX50X200D.write(':SOURce:CURRent:LEVel:IMMediate:AMPLitude %G' % (0))
-                SGX50X200D.write(':SOURce:VOLTage:LEVel:IMMediate:AMPLitude %G' % (0))  
-                SGX50X200D.write('*RST')     
-                SGX50X200D.close()
-                rm.close()
-                self.runButton.setStyleSheet("background-color: rgb(77,77,77); :hover : background-color: rgba(183, 134, 32, 20%);border: 1px solid #b78620;")
-                self.runButton.setText("RUN")
-                self.voltageMeasurements.clear()
-                self.currentMeasurements.clear()
-                self.setVoltage1.clear()
-                self.setCurrent1.clear()
-                self.setVoltage2.clear()
-                self.setCurrent2.clear()
-                self.resistanceMeasurements.clear()
-                self.graphTime.clear()
-                self.tc1Values.clear()
-                self.tc2Values.clear()
-                self.tc3Values.clear()
-                self.tc4Values.clear()
-                self.tc5Values.clear()
-                self.runButton.setEnabled(True)
-                print("Cycle Completed")
-                return "CYCLE COMPLETED"
+            
+            SGX50X200D.write(':SOURce:CURRent:LEVel:IMMediate:AMPLitude %G' % (0))
+            SGX50X200D.write(':SOURce:VOLTage:LEVel:IMMediate:AMPLitude %G' % (0))  
+            SGX50X200D.write('*RST')     
+            SGX50X200D.close()
+            rm.close()
+            
+            self.runButton.setStyleSheet("background-color: rgb(77,77,77); :hover : background-color: rgba(183, 134, 32, 20%);border: 1px solid #b78620;")
+            self.runButton.setText("RUN")
+            self.voltageMeasurements.clear()
+            self.currentMeasurements.clear()
+            self.setVoltage1.clear()
+            self.setCurrent1.clear()
+            self.setVoltage2.clear()
+            self.setCurrent2.clear()
+            self.setVoltage3.clear()
+            self.setCurrent3.clear()
+            self.resistanceMeasurements.clear()
+            self.graphTime.clear()
+            self.tc1Values.clear()
+            self.tc2Values.clear()
+            self.tc3Values.clear()
+            self.tc4Values.clear()
+            self.tc5Values.clear()
+            self.runButton.setEnabled(True)
+            print("Cycle Completed")
+            return "CYCLE COMPLETED"
         except:
             self.runButton.setStyleSheet("color: white")
             self.runButton.setText("RUN")
@@ -879,12 +992,19 @@ class MainPage(QWidget):
             self.runButton.setEnabled(True)
             print("Cycle ERROR")
             return "Cycle Error"
+        
+    def closeEvent(self,event):
+        self.reply = QMessageBox.question(self,"Window Close","Are you sure?", QMessageBox.Yes | QMessageBox.No)
+        if self.reply == QMessageBox.Yes:
+            self.cycleContinue = False
+            self.measureTemperature = False
+            self.win.close()
+            event.accept()
+        else:
+            event.ignore()
+        
 def main():
     app = QApplication(sys.argv)
-    file = open("Combinear.qss","r")
-    with file:
-        qss  = file.read()
-        app.setStyleSheet(qss)
     window = MainPage(title = "Resistance Welding")
     sys.exit(app.exec_())
     
