@@ -999,6 +999,7 @@ class MainPage(QWidget):
             self.cycleContinue = False
             self.measureTemperature = False
             self.win.close()
+            sys.exit()
             event.accept()
         else:
             event.ignore()
