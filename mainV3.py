@@ -1455,4 +1455,5 @@ Notes:
     3-Graph renk patterni tekrar düzenlenecek
     5-Sıcaklığa göre akım değerleri devamlı güncellenecek
     7-Thermocouple sayısı sınırsız olacak.
+    ***pyinstaller --onefile [script.py] --hidden-import pyvisa-py*** use this command to convert py to exe***
 """
