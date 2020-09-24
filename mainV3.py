@@ -1,11 +1,9 @@
 import sys
 from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QPushButton, QFrame, QLineEdit,QSpinBox,QMessageBox,QTabWidget
-#from PyQt5.QtCore import Qt # Deneme yaptıktan sonra kaldıracağım
 from PyQt5.QtCore import QRect
 from PyQt5.QtGui import QPixmap,QFont
 import pyvisa as visa
 import time
-#from pyqtgraph import PlotWidget, plot
 import pyqtgraph as pg
 from collections import deque
 from pyqtgraph.Qt import QtCore
@@ -1438,7 +1436,7 @@ class MainPage(QWidget):
 
 def main():
     app = QApplication(sys.argv)
-    window = MainPage(title = "Resistance Welding")
+    window = MainPage(title = "Resistance Welding V3")
     timer = QtCore.QTimer()
     timer.timeout.connect(window.draw_graph)
     timer.start(500)
