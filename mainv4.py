@@ -23,7 +23,6 @@ class MainPage(QWidget):
         self.width = 1400
         self.height = 950
         self.maxLen = 50
-
         self.voltageMeasurements = deque()
         self.currentMeasurements = deque()
         self.setVoltage1 = deque()
@@ -58,7 +57,6 @@ class MainPage(QWidget):
         self.labelHeight = 30
         self.host = '192.168.1.30' # PLC IP
         self.port = 502 # PLC PORT
-
 
         self.graph()
         self.widget()
@@ -227,7 +225,6 @@ class MainPage(QWidget):
         self.timeInput3.setPlaceholderText("0")
 
         #Temperature Inputs
-
         self.meltTempInputLabel = QLabel("Melting temperature : ", self.frameCycleInputs)
         self.meltTempInputLabel.setGeometry(QRect(50, 80, 150, 50))
         self.meltTempInputLabel.hide()
@@ -263,8 +260,6 @@ class MainPage(QWidget):
         self.dwellTimeInputRun.setGeometry(QRect(450, 130, 50, 50))
         self.dwellTimeInputRun.setPlaceholderText("0")
         self.dwellTimeInputRun.hide()
-
-
 
         self.set_paramsButton = QPushButton("SET PARAMETERS",self.frameCycleInputs)
         self.set_paramsButton.setGeometry(QRect(500,250, self.buttonWidth,self.buttonHeight))
@@ -324,7 +319,6 @@ class MainPage(QWidget):
         self.timeLabel3.setStyleSheet("border-style: none;font-size:15px")
 
         #Temperature Labels
-
         self.meltTempLabel = QLabel("0 C°", self.frameCycleLabels)
         self.meltTempLabel.setGeometry(QRect(50, 50, 150, 20))
         self.meltTempLabel.setStyleSheet("border-style: none;font-size:15px")
@@ -517,62 +511,36 @@ class MainPage(QWidget):
 
         if self.CurrDrivenCycleMode:
             self.CurrDrivenCycleMode = False
-
             self.voltageInputLabel.hide()
-
             self.currentInputLabel.hide()
-
             self.timeInputLabel.hide()
-
             self.voltageInput.hide()
-
             self.curentInput.hide()
-
             self.timeInput.hide()
-
             self.voltageInputLabel2.hide()
-
             self.currentInputLabel2.hide()
-
             self.timeInputLabel2.hide()
-
             self.voltageInput2.hide()
-
             self.curentInput2.hide()
-
             self.timeInput2.hide()
-
             self.voltageInputLabel3.hide()
-
             self.currentInputLabel3.hide()
-
             self.timeInputLabel3.hide()
-
             self.voltageInput3.hide()
-
             self.curentInput3.hide()
-
             self.timeInput3.hide()
 
             #TEMPERATURE INPUTS
             self.meltTempInputLabel.show()
-
             self.meltTimeInputLabel.show()
-
             self.meltTempInput.show()
-
             self.meltTimeInputRun.show()
-
             self.dwellTempInputLabel.show()
-
             self.dwellTimeInputLabel.show()
-
             self.dwellTempInput.show()
-
             self.dwellTimeInputRun.show()
 
             #Parameters for temperature shown labels
-
             self.meltTempLabel.show()
             self.meltTimeLabel.show()
             self.dwellTempLabel.show()
@@ -592,61 +560,34 @@ class MainPage(QWidget):
 
         else:
             self.CurrDrivenCycleMode = True
-
             self.voltageInputLabel.show()
-
             self.currentInputLabel.show()
-
             self.timeInputLabel.show()
-
             self.voltageInput.show()
-
             self.curentInput.show()
-
             self.timeInput.show()
-
             self.voltageInputLabel2.show()
-
             self.currentInputLabel2.show()
-
             self.timeInputLabel2.show()
-
             self.voltageInput2.show()
-
             self.curentInput2.show()
-
             self.timeInput2.show()
-
             self.voltageInputLabel3.show()
-
             self.currentInputLabel3.show()
-
             self.timeInputLabel3.show()
-
             self.voltageInput3.show()
-
             self.curentInput3.show()
-
             self.timeInput3.show()
-
             self.meltTempInputLabel.hide()
-
             self.meltTimeInputLabel.hide()
-
             self.meltTempInput.hide()
-
             self.meltTimeInputRun.hide()
-
             self.dwellTempInputLabel.hide()
-
             self.dwellTimeInputLabel.hide()
-
             self.dwellTempInput.hide()
-
             self.dwellTimeInputRun.hide()
 
             # Parameters for temperature shown labels
-
             self.meltTempLabel.hide()
             self.meltTimeLabel.hide()
             self.dwellTempLabel.hide()
@@ -709,7 +650,8 @@ class MainPage(QWidget):
         return "Temperature reading is stopped"
 
     def stop_cycle(self):
-
+        
+        #Set all parameters to zero
         self.voltage1 = 0
         self.current1 = 0
         self.voltage2 = 0
@@ -717,9 +659,8 @@ class MainPage(QWidget):
         self.voltage3 = 0
         self.current3 = 0
 
-
         try:
-
+            
             rm = visa.ResourceManager()
             SGX50X200D = rm.open_resource('TCPIP0::169.254.237.223::inst0::INSTR')
             SGX50X200D.write(':SOURce:VOLTage:LEVel:IMMediate:AMPLitude %G' % (0))
@@ -744,13 +685,14 @@ class MainPage(QWidget):
             self.timeLabel3.setText("0 s (2nd dwell)")
             print("Cycle stopped im emergency")
             return "Cycle stopped im emergency"
+        
         except Exception as error:
 
             print(error," Cycle couldn't stop in emergency")
             return "Cycle couldn't stop in emergency"
 
     def check_connection(self):
-
+        #Just try to connect to power supply.
         try:
 
             rm = visa.ResourceManager()
@@ -799,7 +741,6 @@ class MainPage(QWidget):
         self.curve19 = self.p1.plot(self.meltUpper, name="Melting Temp Upper Limit",pen=pg.mkPen('w', style=QtCore.Qt.DotLine, width=2))
         self.curve20 = self.p1.plot(self.dwellLower, name="Dwell Temp Lower Limit",pen=pg.mkPen('w', style=QtCore.Qt.DotLine, width=2))
         self.curve21 = self.p1.plot(self.dwellUpper, name="Dwell Temp Upper Limit",pen=pg.mkPen('w', style=QtCore.Qt.DotLine, width=2))
-
         self.curve7 = self.p1.plot(self.resistanceMeasurements,self.graphTime,name = "Resistance",pen=pg.mkPen('b',width=2))
 
         #DataLogger
@@ -812,7 +753,8 @@ class MainPage(QWidget):
 
         #AddLegend
         self.legend = self.p1.addLegend(offset=(1600, 20))
-
+        
+        #Add items to legend
         self.legend.addItem(self.curve1, name=self.curve1.opts['name'])
         self.legend.addItem(self.curve2, name=self.curve2.opts['name'])
         self.legend.addItem(self.curve3, name=self.curve3.opts['name'])
@@ -837,6 +779,7 @@ class MainPage(QWidget):
         self.legend.addItem(self.curve21, name=self.curve21.opts['name'])
 
     def reset_graph(self):
+        #Reset all plots from graph
         try:
             self.voltageMeasurements.clear()
             self.currentMeasurements.clear()
@@ -913,6 +856,7 @@ class MainPage(QWidget):
             return "Reset Graph Error"
 
     def calculate_resistance(self):
+        #Connect to power supply and apply 5amper to calculate resistance
         try:
             rm = visa.ResourceManager()
             SGX50X200D = rm.open_resource('TCPIP0::169.254.237.223::inst0::INSTR')
@@ -1023,7 +967,7 @@ class MainPage(QWidget):
             self.missingDimension.setText("Missing Input !")
             print("Missing input in coupon properties")
             return "Missing input"
-
+        
     def manual_voltage_thread(self):
         try:
             self.manualVoltageThread = threading.Thread(target=self.manual_voltage)
@@ -1033,7 +977,8 @@ class MainPage(QWidget):
         except:
             print("Thread Couldn't Completed")
             return "Thread Couldn't Completed"
-
+        
+    #Will be fixed
     def manual_voltage(self):
         try:
            self.manualVoltage = int(self.voltageSpinBox.text())
@@ -1057,7 +1002,8 @@ class MainPage(QWidget):
         except:
             print("Thread Couldn't Completed")
             return "Thread Couldn't Completed"
-
+        
+    #Will be fixed
     def manual_current(self):
         try:
            self.manualVoltage = int(self.voltageSpinBox.text())
@@ -1083,10 +1029,10 @@ class MainPage(QWidget):
             writer.writerow(["Time", "Voltage","Current","TC1","TC2","TC3","TC4","TC5","TC6"])
 
         if self.CurrDrivenCycleMode:
-
+            #for current driven section
             try:
 
-                #take inputs as integer
+                #take inputs and assign them to object properties as integer
                 self.voltage1 = int(self.voltageInput.text())
                 self.current1 = int(self.curentInput.text())
                 self.cycleTime1 = int(self.timeInput.text())
@@ -1099,7 +1045,8 @@ class MainPage(QWidget):
                 self.current3 = int(self.curentInput3.text())
                 self.cycleTime3 = int(self.timeInput3.text())
                 self.soirNumber = self.soirNoInput.text()
-
+                
+                #Set labels to enable user check before running of cycle
                 self.voltageLabel.setText(f"{self.voltage1} V (raise)")
                 self.currentLabel.setText(f"{self.current1} A (raise)")
                 self.timeLabel.setText(f"{self.cycleTime1} s (raise)")
@@ -1121,7 +1068,7 @@ class MainPage(QWidget):
                 self.currentLabel3.setStyleSheet("color:green;border-style: none;font-size:20px;")
                 self.timeLabel3.setStyleSheet("color:green;border-style: none;font-size:20px;")
 
-                #draw set parameters to graph
+                #draw set parameters to graph initially
                 self.curve3.setData([0,450],[self.voltage1,self.voltage1])
                 self.curve4.setData([0,450],[self.current1,self.current1])
                 self.curve5.setData([0,450],[self.voltage2,self.voltage2])
@@ -1142,6 +1089,8 @@ class MainPage(QWidget):
 
                 print("Missing input")
                 return "Missing input"
+            
+        #For self driven section
         else:
             try:
                 self.meltingTemperature = int(self.meltTempInput.text())
@@ -1177,9 +1126,6 @@ class MainPage(QWidget):
         try:
             self.runThread = threading.Thread(target=self.runCycle)
             self.runThread.start()
-
-            #self.graphThread = threading.Thread(target = self.draw_graph_thread)
-            #self.graphThread.start()
             print("Thread Completed")
             return "Thread Completed"
         except:
@@ -1199,6 +1145,7 @@ class MainPage(QWidget):
             print("Connected to DataLogger")
         except:
             print("DataLogger connection error")
+            
         # Connect to Power Supply
         try:
             self.rm = visa.ResourceManager()
@@ -1293,6 +1240,8 @@ class MainPage(QWidget):
                 self.runButton.setEnabled(True)
                 print(" Current Driven Cycle ERROR")
                 return "Cycle Error"
+            
+        #self driven cycle
         else:
             try:
                 self.time1 = time.perf_counter()
@@ -1511,12 +1460,12 @@ if __name__ == "__main__" :
 
 """
 Notes:
-    ***Resistance round edilecek****
-    self.tempCycleEnd = False run_cycle fonksiyonu içine alınacak
+    --Cycle reuse ' da grafik cycle bitiminden 10 sn sonra durmuyor, incele.
+    --UI responsive olmalı.
+    --self.tempCycleEnd = False run_cycle fonksiyonu içine alınacak
     --Connection check te cihaz bağlanıtsını kapatma iptal edilebilir.
-    -EMERGENCY STOP CYCLE İPTAL ETMELİ ve PARAMETERS LABEL' LARINI BEYAZA BOYAMALI
-    1-Curve isimleri düzeltilecek
-    3-Graph renk patterni tekrar düzenlenecek
-    7-Thermocouple sayısı sınırsız olacak.
+    --Curve variable isimleri anlamsız, düzeltilecek
+    --Graph renk patterni tekrar düzenlenecek
+    --Thermocouple sayısı sınırsız olacak.
     ***pyinstaller --onefile [script.py] --hidden-import pyvisa-py*** use this command to convert py to exe***
 """
