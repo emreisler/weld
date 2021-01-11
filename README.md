@@ -1,4 +1,4 @@
-First install required libraries with folowing command
-pip install requirements.txt
+First install required libraries with
+"pip install requirements.txt"
 
-<img src="ResWeldMainScreen.png" width="600" height="500"><img src="ResWeldMainDataPlotting.png" width="600" height="500">
+<img src="ResWeldMainScreen.png" width="500" height="400"><img src="ResWeldMainDataPlotting.png" width="500" height="400">
