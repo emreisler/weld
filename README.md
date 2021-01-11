@@ -1,6 +1,4 @@
 First install required libraries with folowing command
 pip install requirements.txt
 
-https://github.com/emreisler/weld/blob/master/ResWeldMainScreen.png?raw=true
-
-https://github.com/emreisler/weld/blob/master/ResWeldMainDataPlotting.png?raw=true
+<img src="ResWeldMainScreen.png" width="600" height="500"><img src="ResWeldMainDataPlotting.png" width="600" height="500">
